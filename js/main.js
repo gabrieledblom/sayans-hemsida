@@ -17,6 +17,7 @@ import { ToolsPanel } from './ui/tools-panel.js';
 import { SetupPanel } from './ui/setup-panel.js';
 import { CodesPanel } from './ui/codes-panel.js';
 import { icon } from './ui/icons.js';
+import { answer, SUGGESTIONS } from './ui/assistant.js';
 import { $, $$, h, download, pickFile, debounce, fmtTime } from './ui/dom.js';
 
 const STORE_KEY = 'osp-sim-v1';
@@ -105,6 +106,7 @@ setIcon('#btn-save', 'save', 17);
 setIcon('#btn-samples', 'list', 16, 'Exempel');
 setIcon('#btn-help', 'help', 16, 'Hjälp');
 setIcon('#t-reset', 'reset', 18);
+setIcon('#t-back', 'back', 18);
 setIcon('#t-step', 'step', 18);
 setIcon('#t-play', 'play', 22);
 setIcon('#t-end', 'end', 18);
@@ -279,6 +281,12 @@ $('#t-reset').addEventListener('click', () => {
   world.toolpath.setProgress(0);
 });
 $('#t-step').addEventListener('click', () => player.stepBlock());
+$('#t-back').addEventListener('click', () => {
+  runtimeMsgs = [];
+  player.stepBack();
+  renderMessages();
+  editor.setMarkers(markerMap());
+});
 $('#t-end').addEventListener('click', () => {
   runtimeMsgs = [];
   player.runToEnd();
@@ -330,7 +338,8 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === ' ') { e.preventDefault(); $('#t-play').click(); }
-  else if (k === 's') $('#t-step').click();
+  else if (k === 's' || k === 'arrowright') { e.preventDefault(); $('#t-step').click(); }
+  else if (k === 'arrowleft') { e.preventDefault(); $('#t-back').click(); }
   else if (k === 'r') $('#t-reset').click();
   else if (k === 'e') $('#t-end').click();
 });
@@ -445,7 +454,7 @@ function renderMessages() {
 }
 
 // ----------------------------------------------------------- tabs
-const PANES = ['tools', 'setup', 'msgs', 'codes'];
+const PANES = ['tools', 'setup', 'msgs', 'codes', 'ask'];
 function selectTab(name) {
   state.ui.tab = name;
   PANES.forEach((p) => {
@@ -456,6 +465,7 @@ function selectTab(name) {
   if (name === 'tools') toolsPanel.render();
   if (name === 'setup') setupPanel.render();
   if (name === 'codes') codesPanel.render();
+  if (name === 'ask') renderAsk();
   if (name === 'msgs') { $('#pane-msgs').dataset.rendered = ''; renderMessages(); }
   save();
 }
@@ -520,6 +530,24 @@ const setupPanel = new SetupPanel($('#pane-setup'), {
   },
 });
 const codesPanel = new CodesPanel($('#pane-codes'), { machine: () => state.machine });
+
+// ----------------------------------------------------------- assistant
+const chat = [];
+function renderAsk(ask) {
+  const pane = $('#pane-ask');
+  if (ask) {
+    chat.push({ who: 'me', text: ask });
+    chat.push({ who: 'bot', text: answer(ask, { blocks: result?.blocks || [], msgs: [...(result?.msgs || []), ...runtimeMsgs], tools: state.tools[state.machine], stats: result?.stats, duration: result?.duration }) });
+  }
+  const log = h('div', { class: 'chat-log', role: 'log', 'aria-live': 'polite' },
+    chat.length ? chat.map((m) => h('div', { class: `bub ${m.who}` }, m.text)) : h('div', { class: 'bub bot' }, 'Hej! Jag är en enkel regelbaserad hjälpare (ingen AI-modell). Fråga om en kod, en rad eller varför något larmar.'));
+  const input = h('input', { class: 'in', type: 'text', placeholder: 'Fråga om koden, t.ex. "varför larmar det?"', 'aria-label': 'Din fråga', id: 'ask-in' });
+  const form = h('form', { class: 'chat-form', onsubmit: (e) => { e.preventDefault(); const v = input.value.trim(); if (v) renderAsk(v); } }, input, h('button', { class: 'btn primary', type: 'submit' }, 'Fråga'));
+  const chips = h('div', { class: 'chips wrap' }, SUGGESTIONS.map((q) => h('button', { class: 'chip', onclick: () => renderAsk(q) }, q)));
+  pane.replaceChildren(log, chips, form);
+  log.scrollTop = log.scrollHeight;
+  if (ask) $('#ask-in').focus();
+}
 
 // ----------------------------------------------------------- machine switch / samples
 function applyMachine() {

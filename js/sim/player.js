@@ -31,6 +31,10 @@ export class Player {
   load(steps, startPos) {
     this.steps = steps;
     this.startPos = startPos.slice();
+    this.bounds = [];
+    steps.forEach((st, i) => {
+      if (st.k === 'e' && st.e === 'blk') this.bounds.push(i);
+    });
     this.reset();
   }
 
@@ -66,6 +70,16 @@ export class Player {
     this.seenBlk = false;
     this.playing = true;
     this.emit('state');
+  }
+
+  // Step one block backwards: rebuild the state before the block that last ran.
+  stepBack() {
+    let target = 0;
+    for (const i of this.bounds) {
+      if (i < this.idx) target = i;
+      else break;
+    }
+    this.seek(target);
   }
 
   get duration() {

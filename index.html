@@ -114,12 +114,14 @@
         <button role="tab" id="tab-setup" aria-controls="pane-setup" aria-selected="false">Ämne</button>
         <button role="tab" id="tab-msgs" aria-controls="pane-msgs" aria-selected="false">Meddelanden <b class="badge" id="msg-badge" hidden>0</b></button>
         <button role="tab" id="tab-codes" aria-controls="pane-codes" aria-selected="false">Koder</button>
+        <button role="tab" id="tab-ask" aria-controls="pane-ask" aria-selected="false">Fråga</button>
       </nav>
       <div class="panes">
         <div role="tabpanel" id="pane-tools" aria-labelledby="tab-tools" class="pane"></div>
         <div role="tabpanel" id="pane-setup" aria-labelledby="tab-setup" class="pane" hidden></div>
         <div role="tabpanel" id="pane-msgs" aria-labelledby="tab-msgs" class="pane" hidden></div>
         <div role="tabpanel" id="pane-codes" aria-labelledby="tab-codes" class="pane" hidden></div>
+        <div role="tabpanel" id="pane-ask" aria-labelledby="tab-ask" class="pane" hidden></div>
       </div>
     </aside>
   </main>
@@ -127,7 +129,8 @@
   <footer class="transport" aria-label="Körning">
     <div class="tgrp">
       <button class="tbtn" id="t-reset" title="Återställ (R)" aria-label="Återställ"></button>
-      <button class="tbtn" id="t-step" title="Ett block (S)" aria-label="Kör ett block"></button>
+      <button class="tbtn" id="t-back" title="Ett block bakåt (←)" aria-label="Ett block bakåt"></button>
+      <button class="tbtn" id="t-step" title="Ett block framåt (→ eller S)" aria-label="Kör ett block framåt"></button>
       <button class="tbtn primary" id="t-play" title="Kör / Paus (mellanslag)" aria-label="Kör"></button>
       <button class="tbtn" id="t-end" title="Kör till slut direkt (E)" aria-label="Kör till slut"></button>
     </div>

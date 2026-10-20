@@ -4,7 +4,8 @@
 import { latheSilhouette } from './tools.js';
 
 export class LatheStock {
-  constructor({ od = 50, id = 0, zFront = 1, length = 80 }) {
+  constructor({ od = 50, id = 0, zFront = 1, length = 80, stickOut }) {
+    this.stickOut = stickOut ?? Math.max(20, length * 0.8);
     this.od = od;
     this.id = id;
     this.zFront = zFront;
@@ -14,6 +15,7 @@ export class LatheStock {
     this.n = Math.ceil(length / this.dz) + 1;
     this.ro = new Float32Array(this.n);
     this.ri = new Float32Array(this.n);
+    this.thr = new Float32Array(this.n); // thread pitch per column (0 = not threaded)
     this.version = 0;
     this.dirtyLo = 0;
     this.dirtyHi = this.n - 1;
@@ -24,6 +26,7 @@ export class LatheStock {
   reset() {
     this.ro.fill(this.od / 2);
     this.ri.fill(this.id / 2);
+    this.thr.fill(0);
     this.dirtyLo = 0;
     this.dirtyHi = this.n - 1;
     this.version++;
@@ -114,7 +117,13 @@ export class LatheStock {
       const t = s / total;
       const z = a[2] + Math.sign(dz) * s;
       const x = a[0] + (b[0] - a[0]) * t;
-      removed += this.stamp(sil, z, x);
+      const got = this.stamp(sil, z, x);
+      if (got > 1e-6) {
+        const a = Math.max(0, Math.floor(this.index(z - pitch)));
+        const b = Math.min(this.n - 1, Math.ceil(this.index(z + pitch)));
+        for (let i = a; i <= b; i++) this.thr[i] = pitch;
+      }
+      removed += got;
     }
     return removed;
   }

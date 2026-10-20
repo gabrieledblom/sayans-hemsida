@@ -388,6 +388,12 @@ export function parseLine(raw, i) {
         block.words.push({ a: run, v: sc.wordValue() });
         continue;
       }
+      if (run[0] === 'N' && !/\d/.test(sc.s[sc.p + 1] || '') && sc.s[sc.p + 1] !== '=') {
+        // N<text> (e.g. NT1): a free-form block label, ignored by the control
+        const lm = /^N[A-Z0-9_]*/.exec(sc.s.slice(sc.p));
+        sc.p += lm[0].length;
+        continue;
+      }
       sc.p += 1;
       const v = sc.wordValue();
       block.words.push({ a: run[0], v });

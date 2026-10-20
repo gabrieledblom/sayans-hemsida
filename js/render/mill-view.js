@@ -105,9 +105,12 @@ export class MillView {
     const tableTop = s.z0 - 28;
     add(new THREE.BoxGeometry(w + 360, 30, d + 360), dark, cx, cy, tableTop - 15);
     add(new THREE.BoxGeometry(w - 12, 26, d - 12), mid, cx, cy, s.z0 - 13);
-    const jawH = Math.min(14, (s.z1 - s.z0) * 0.5);
-    add(new THREE.BoxGeometry(26, 28 + jawH, d + 40), jawM, s.x0 - 13.5, cy, s.z0 - 14 + (28 + jawH) / 2 - 0);
-    add(new THREE.BoxGeometry(26, 28 + jawH, d + 40), jawM, s.x1 + 13.5, cy, s.z0 - 14 + (28 + jawH) / 2 - 0);
+    const stick = s.stick ?? Math.max(5, (s.z1 - s.z0) * 0.6);
+    const jawTop = Math.max(s.z0 + 2, Math.min(s.z1, s.z1 - stick));
+    const jawBottom = s.z0 - 28;
+    const jh = jawTop - jawBottom;
+    add(new THREE.BoxGeometry(26, jh, d + 40), jawM, s.x0 - 13.5, cy, jawBottom + jh / 2);
+    add(new THREE.BoxGeometry(26, jh, d + 40), jawM, s.x1 + 13.5, cy, jawBottom + jh / 2);
     add(new THREE.BoxGeometry(60, 40, d + 40), dark, s.x0 - 56, cy, s.z0 - 8);
     add(new THREE.BoxGeometry(60, 40, d + 40), dark, s.x1 + 56, cy, s.z0 - 8);
   }

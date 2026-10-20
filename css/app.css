@@ -410,3 +410,13 @@ dialog[open] { animation: pop 0.28s var(--ease); }
 .glyph-wrap { color: var(--accent); display: inline-grid; }
 .codes-tbl .note.tag { color: var(--accent); opacity: 0.8; }
 .codes-tbl td:last-child { text-align: right; }
+
+/* ---------- assistant ---------- */
+.chat-log { display: grid; gap: 8px; max-height: 46vh; overflow: auto; margin-bottom: 10px; padding-right: 4px; }
+.bub { padding: 9px 12px; border-radius: 12px; font-size: 13px; white-space: pre-wrap; line-height: 1.5; max-width: 94%; }
+.bub.bot { background: var(--panel2); border: 1px solid var(--line2); }
+.bub.me { background: var(--accent-soft); border: 1px solid rgba(60, 196, 232, 0.4); justify-self: end; }
+.chips.wrap { flex-wrap: wrap; margin-bottom: 10px; }
+.chat-form { display: flex; gap: 8px; }
+.tabs { overflow-x: auto; }
+.tabs button { white-space: nowrap; }

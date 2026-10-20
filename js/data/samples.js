@@ -3,10 +3,10 @@
 import { defaultTools, makeTool } from '../sim/tools.js';
 
 const latheSetup = (over = {}) => ({
-  lathe: { od: 50, id: 0, length: 80, zFront: 1, ...over },
+  lathe: { od: 50, id: 0, length: 80, zFront: 1, stickOut: 65, ...over },
 });
 const millSetup = (over = {}) => ({
-  mill: { x0: -50, x1: 50, y0: -40, y1: 40, z0: -25, z1: 0, ...over },
+  mill: { x0: -50, x1: 50, y0: -40, y1: 40, z0: -25, z1: 0, stick: 15, ...over },
 });
 
 export const SAMPLES = [
@@ -77,7 +77,7 @@ N67 M30`,
     id: 'lathe-cycles',
     machine: 'lathe',
     name: 'Svarv – fasta cykler (G77, G78, G75, G76)',
-    setup: latheSetup({ od: 40, length: 70 }),
+    setup: latheSetup({ od: 40, length: 70, stickOut: 55 }),
     program: `O1100 (FASTA CYKLER)
 T01
 G97 S1000 M03
@@ -190,7 +190,7 @@ N90 M30`,
     id: 'mill-pattern',
     machine: 'mill',
     name: 'Fräs – hålmönster med CALL, IF/GOTO och G91',
-    setup: millSetup({ x0: -40, x1: 40, y0: -30, y1: 30, z0: -15, z1: 0 }),
+    setup: millSetup({ x0: -40, x1: 40, y0: -30, y1: 30, z0: -15, z1: 0, stick: 8 }),
     program: `O3000 (HALMONSTER MED UNDERPROGRAM)
 N1 G90 G17 G21 G94 G40 G80
 T04 M06

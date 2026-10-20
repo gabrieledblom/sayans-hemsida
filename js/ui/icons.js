@@ -4,6 +4,7 @@ const P = {
   play: '<path d="M6.2 4.2v11.6L15.6 10z" fill="currentColor" stroke="none"/>',
   pause: '<path d="M5.5 4.5h3.2v11H5.5zM11.3 4.5h3.2v11h-3.2z" fill="currentColor" stroke="none"/>',
   step: '<path d="M4.5 4.5v11M7.5 4.8l7.6 5.2-7.6 5.2z"/>',
+  back: '<path d="M15.5 4.5v11M12.5 4.8 4.9 10l7.6 5.2z"/>',
   reset: '<path d="M5 4.5v11M15.5 4.8 8 10l7.5 5.2z"/>',
   end: '<path d="M4.5 4.8 12 10l-7.5 5.2zM15 4.5v11"/>',
   iso: '<path d="M10 2.6l6.4 3.7v7.4L10 17.4l-6.4-3.7V6.3zM10 10l6.4-3.7M10 10v7.4M10 10 3.6 6.3"/>',

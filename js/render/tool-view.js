@@ -89,6 +89,11 @@ function millProfilePoints(tool) {
   return pts;
 }
 
+function capped(pts) {
+  const last = pts[pts.length - 1];
+  return [...pts, new THREE.Vector2(0, last.y)];
+}
+
 function buildMill(tool) {
   const group = new THREE.Group();
   const spin = new THREE.Group();
@@ -99,7 +104,7 @@ function buildMill(tool) {
   const tex = fluteTexture(tool.flutes || 4);
   tex.repeat.set(1, Math.max(1, len / (R * 4)));
   const cutMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: tex, metalness: 0.9, roughness: 0.3 });
-  const cut = new THREE.Mesh(new THREE.LatheGeometry(millProfilePoints(tool), 40), cutMat);
+  const cut = new THREE.Mesh(new THREE.LatheGeometry(capped(millProfilePoints(tool)), 40), cutMat);
   spin.add(cut);
   if (tool.type !== 'drill' && tool.type !== 'spot') {
     const tin = new THREE.MeshStandardMaterial({ color: GOLD, metalness: 0.85, roughness: 0.35, transparent: true, opacity: 0.35 });
@@ -154,7 +159,7 @@ function buildLathe(tool) {
     const len = tool.len || 60;
     const half = ((t === 'center' ? tool.tipAngle || 60 : tool.tipAngle || 118) / 2) * D2R;
     const pts = [new THREE.Vector2(0, 0), new THREE.Vector2(R, R / Math.tan(half)), new THREE.Vector2(R, len)];
-    const mesh = new THREE.Mesh(new THREE.LatheGeometry(pts, 40), new THREE.MeshStandardMaterial({ color: GOLD, metalness: 0.9, roughness: 0.3 }));
+    const mesh = new THREE.Mesh(new THREE.LatheGeometry(capped(pts), 40), new THREE.MeshStandardMaterial({ color: GOLD, metalness: 0.9, roughness: 0.3 }));
     mesh.rotation.z = -Math.PI / 2; // lathe geometry axis y -> +x
     group.add(mesh);
     const sh = new THREE.Mesh(new THREE.CylinderGeometry(Math.min(R, 14), Math.min(R, 14), 70, 32), steel);

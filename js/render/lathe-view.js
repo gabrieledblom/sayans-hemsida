@@ -12,6 +12,7 @@ export const COLORS = {
   machined: new THREE.Color(0xdfe6ee),
   inner: new THREE.Color(0xc9d3de),
   section: new THREE.Color(0x3fb6c4),
+  thread: new THREE.Color(0x6fd0ff),
 };
 
 function stripeTexture() {
@@ -71,34 +72,35 @@ export class LatheView {
     const dark = new THREE.MeshStandardMaterial({ color: 0x252d38, metalness: 0.5, roughness: 0.7 });
     const jawMat = new THREE.MeshStandardMaterial({ color: 0x8a95a3, metalness: 0.8, roughness: 0.35 });
 
+    const zc = Math.min(s.zFront - 2, Math.max(s.zBack + 5, s.zFront - (s.stickOut ?? s.length)));
     const chuckR = Math.max(R + 28, 55);
     const chuckLen = 42;
     const body = new THREE.Mesh(new THREE.CylinderGeometry(chuckR, chuckR, chuckLen, 64), steel);
     body.rotation.z = Math.PI / 2;
-    body.position.x = s.zBack - chuckLen / 2 - 2;
+    body.position.x = zc - chuckLen / 2 - 2;
     this.chuck.add(body);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(chuckR, 2.2, 10, 64), dark);
     ring.rotation.y = Math.PI / 2;
-    ring.position.x = s.zBack - 2;
+    ring.position.x = zc - 2;
     this.chuck.add(ring);
     for (let i = 0; i < 3; i++) {
       const jaw = new THREE.Mesh(new THREE.BoxGeometry(26, 14, 20), jawMat);
       const a = (i * 2 * Math.PI) / 3 + Math.PI / 2;
       const rad = R + 7 - 1;
-      jaw.position.set(s.zBack + 12, Math.cos(a) * rad, Math.sin(a) * rad);
+      jaw.position.set(zc + 12, Math.cos(a) * rad, Math.sin(a) * rad);
       jaw.rotation.x = a;
       this.chuck.add(jaw);
     }
     const nose = new THREE.Mesh(new THREE.CylinderGeometry(chuckR * 0.82, chuckR * 0.9, 90, 48), dark);
     nose.rotation.z = Math.PI / 2;
-    nose.position.x = s.zBack - chuckLen - 2 - 45;
+    nose.position.x = zc - chuckLen - 2 - 45;
     this.fixed.add(nose);
     const head = new THREE.Mesh(new THREE.BoxGeometry(140, chuckR * 2.6, chuckR * 2.6), dark);
-    head.position.x = s.zBack - chuckLen - 2 - 90 - 70;
+    head.position.x = zc - chuckLen - 2 - 90 - 70;
     this.fixed.add(head);
     const bedY = -(chuckR + 40);
     const bed = new THREE.Mesh(new THREE.BoxGeometry(900, 24, chuckR * 3.2), dark);
-    bed.position.set(s.zBack + 250, bedY, 0);
+    bed.position.set(zc + 250, bedY, 0);
     this.fixed.add(bed);
   }
 
@@ -224,6 +226,28 @@ export class LatheView {
       ri[j] = Math.min(mx, mn);
     }
     const hasInner = ri.some((v) => v > 0.005);
+    // threads: per-column pitch and a smooth weight so the helix fades in/out at the ends
+    const tp = new Float32Array(M);
+    const tw = new Float32Array(M);
+    let anyThread = false;
+    for (let j = 0; j < M; j++) {
+      const c = M === 1 ? 0 : Math.round((j * (n - 1)) / (M - 1));
+      let pm = 0;
+      for (let i = Math.max(0, c - (win >> 1)); i <= Math.min(n - 1, c + (win >> 1)); i++) pm = Math.max(pm, st.thr[i]);
+      tp[j] = pm;
+      if (pm) anyThread = true;
+    }
+    if (anyThread) {
+      const dzCol = (st.length) / (M - 1);
+      for (let j = 0; j < M; j++) {
+        const ramp = Math.max(2, Math.round((tp[j] || 1.5) / dzCol));
+        tw[j] = tp[j] ? Math.min(1, (j ? tw[j - 1] : 0) + 1 / ramp) : 0;
+      }
+      for (let j = M - 2; j >= 0; j--) {
+        const ramp = Math.max(2, Math.round((tp[j] || 1.5) / dzCol));
+        tw[j] = tp[j] ? Math.min(tw[j], tw[j + 1] + 1 / ramp) : 0;
+      }
+    }
     const P = this.pos, N = this.nor, C = this.col, U = this.uv;
     const o = this.off;
     const cosT = new Float32Array(ringV), sinT = new Float32Array(ringV);
@@ -244,9 +268,11 @@ export class LatheView {
       const lo = Math.hypot(so, 1), li = Math.hypot(si, 1);
       const raw = ro[j] >= od2 - 0.004;
       tmp.copy(raw ? COLORS.raw : COLORS.machined);
+      if (tw[j] > 0) tmp.lerp(COLORS.thread, 0.45 * tw[j]);
       for (let k = 0; k < ringV; k++) {
         const v = o.outer + j * ringV + k;
-        set3(P, v, zs[j], ro[j] * cosT[k], ro[j] * sinT[k]);
+        const zShift = tw[j] > 0 ? (tp[j] * tw[j] * (this.th0 + (this.span * k) / K)) / (Math.PI * 2) : 0;
+        set3(P, v, zs[j] + zShift, ro[j] * cosT[k], ro[j] * sinT[k]);
         set3(N, v, -so / lo, cosT[k] / lo, sinT[k] / lo);
         set3(C, v, tmp.r, tmp.g, tmp.b);
         U[v * 2] = (this.th0 + (this.span * k) / K) / (Math.PI * 2);

@@ -80,7 +80,6 @@ export class SimEngine {
     } else {
       const r = this.stock.sweep(this.tool, a, b, s.nocut);
       if (r.cut > 0.0005) this.checkCut(s, push);
-      if (r.floor) push(this.warn(`T${this.toolNo}: verktyget går under ämnets underkant (kolla Z-djup / fixtur)`, s.ln));
       if (r.shank) push(this.warn(`T${this.toolNo}: skärlängden ${this.tool.len || 30} mm räcker inte – skaft/hållare går i material`, s.ln));
     }
     return out;
