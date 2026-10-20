@@ -1,0 +1,232 @@
+// Example programs. Each bundles program text, stock setup and (optionally) tools.
+
+import { defaultTools, makeTool } from '../sim/tools.js';
+
+const latheSetup = (over = {}) => ({
+  lathe: { od: 50, id: 0, length: 80, zFront: 1, ...over },
+});
+const millSetup = (over = {}) => ({
+  mill: { x0: -50, x1: 50, y0: -40, y1: 40, z0: -25, z1: 0, ...over },
+});
+
+export const SAMPLES = [
+  {
+    id: 'lathe-shaft',
+    machine: 'lathe',
+    name: 'Svarv – axel med gänga (G71, G88, G73)',
+    setup: latheSetup(),
+    program: `O1000 (AXEL - SVARV)
+(T01 SKRUBB  T02 SLUT  T03 INSTICK  T04 GANGA  T05 BORR)
+N1 G50 S3000
+N2 G00 X100 Z150
+(--- BORRNING PA CENTRUM ---)
+N10 T05
+N11 G97 S800 M03
+N12 G00 X0 Z3 M08
+N13 G183 Z-25 R2 Q6 F0.12
+N14 G80
+N15 G00 Z150 M09
+(--- PLANING OCH SKRUBBNING ---)
+N20 T01
+N21 G97 S1200 M03
+N22 G00 X54 Z0 M08
+N23 G01 X-1 F0.2
+N24 G00 X52 Z2
+N25 G71 U2 R0.5
+N26 G71 P100 Q200 U0.4 W0.1 F0.25
+N27 G00 X100 Z150 M09
+(--- INSTICK ---)
+N30 T03
+N31 G97 S700 M03
+N32 G00 X34 Z-36 M08
+N33 G73 X24 Z-36 Q-39 I1.5 F0.08
+N34 G00 X100 Z150 M09
+(--- SLUTSKAR MED RADIEKOMPENSERING ---)
+N40 T02
+N41 G96 S200 M03
+N42 G00 X52 Z2 M08
+N43 G42
+N100 G00 X16
+N110 G01 Z0 F0.1
+N120 G01 X20 Z-2
+N130 G01 Z-24
+N140 G01 X30
+N150 G01 Z-45
+N160 G02 X36 Z-48 R3
+N170 G01 Z-58
+N180 G01 X44 Z-60
+N200 G01 Z-62
+N210 G40 G00 X100 Z150 M09
+(--- GANGNING M20x1.5 ---)
+N50 T04
+N51 G97 S600 M03
+N52 G00 X23 Z4 M08
+N53 G88 X18.4 Z-21 F1.5
+N54 G00 X100 Z150 M09
+(--- AVSTICKNING ---)
+N60 T03
+N61 G97 S600 M03
+N62 G00 X52 Z-65 M08
+N63 G01 X2 F0.05
+N64 G00 X60 M09
+N65 G00 X100 Z150
+N66 M05
+N67 M30`,
+  },
+  {
+    id: 'lathe-cycles',
+    machine: 'lathe',
+    name: 'Svarv – fasta cykler (G77, G78, G75, G76)',
+    setup: latheSetup({ od: 40, length: 70 }),
+    program: `O1100 (FASTA CYKLER)
+T01
+G97 S1000 M03
+G00 X44 Z2
+(PLANCYKEL G78 - tar bort 1 mm framsida)
+G78 X0 Z0 F0.2
+(LANGSVARVSCYKLER G77 - tre steg)
+G77 X36 Z-40 F0.25
+X32
+X28
+(KONISK CYKEL MED RADIE R)
+G77 X24 Z-30 R-2 F0.2
+G00 X44 Z2
+(KONTUR MED FAS OCH RUNDNING)
+G00 X0 Z2
+G01 Z0 F0.15
+G75 C1.5
+G01 X28
+G76 R2
+G01 Z-30
+G01 X36 Z-35
+G75 C0
+G76 R0
+G01 Z-50
+G00 X100 Z100
+M30`,
+  },
+  {
+    id: 'mill-pocket',
+    machine: 'mill',
+    name: 'Fräs – ficka, hål och spår (G41, G83, G2/G3)',
+    setup: millSetup(),
+    program: `O2000 (FICKA OCH HAL)
+(T01 PLANFRAS  T02 PINNFRAS D10  T03 CENTRUMBORR  T04 BORR D8.5  T05 KULFRAS D8)
+N1 G90 G17 G21 G94 G40 G80 G53
+(--- PLANFRASNING T01 ---)
+N10 T01 M06
+N11 G15 H1
+N12 G90 G00 X-75 Y-15 S2500 M03
+N13 G56 H01 Z10 M08
+N14 G00 Z2
+N15 G01 Z-0.5 F900
+N16 X75
+N17 Y15
+N18 X-75
+N19 G00 Z50 M09
+(--- FICKA T02: SKRUBB MED VARIABLER ---)
+N20 T02 M06
+N21 G90 G00 X0 Y0 S4000 M03
+N22 G56 H02 Z5 M08
+N23 G00 Z2
+N24 G01 Z-8 F250
+VC1=-9 VC2=14.5
+N29 G01 X=-VC2 Y=VC1 F700
+N30 G01 X=VC2
+N31 IF VC1 GE 9 N36
+N32 VC1=VC1+6
+N33 G01 Y=VC1
+N34 VC2=-VC2
+N35 GOTO N30
+N36 G01 X0 Y0
+(--- FICKA T02: SLUTSKAR MED G41 ---)
+N40 G01 X0 Y-6 F500
+N41 G41 D02 G01 X0 Y-15 F250
+N42 G01 X12
+N43 G03 X20 Y-7 R8
+N44 G01 Y7
+N45 G03 X12 Y15 R8
+N46 G01 X-12
+N47 G03 X-20 Y7 R8
+N48 G01 Y-7
+N49 G03 X-12 Y-15 R8
+N50 G01 X0
+N51 G40 G01 X0 Y-6
+N52 G00 Z50 M09
+(--- CENTRERING T03 ---)
+N60 T03 M06
+N61 G90 G00 X35 Y25 S3000 M03
+N62 G56 H03 Z20 M08
+N63 G99 G81 Z-2.5 R3 F200
+N64 X-35
+N65 Y-25
+N66 X35
+N67 G80
+N68 G00 Z50 M09
+(--- BORRNING T04 ---)
+N70 T04 M06
+N71 G90 G00 X35 Y25 S2200 M03
+N72 G56 H04 Z20 M08
+N73 G98 G83 Z-20 R3 Q5 F220
+N74 X-35
+N75 Y-25
+N76 X35
+N77 G80
+N78 G00 Z50 M09
+(--- CIRKULART SPAR T05 ---)
+N80 T05 M06
+N81 G90 G00 X10 Y0 S5000 M03
+N82 G56 H05 Z5 M08
+N83 G00 Z-8
+N84 G01 Z-9 F150
+N85 G02 X10 Y0 Z-10.5 I-10 J0 F350
+N86 G02 X10 Y0 I-10 J0
+N87 G00 Z100 M09
+N88 M05
+N89 G30
+N90 M30`,
+  },
+  {
+    id: 'mill-pattern',
+    machine: 'mill',
+    name: 'Fräs – hålmönster med CALL, IF/GOTO och G91',
+    setup: millSetup({ x0: -40, x1: 40, y0: -30, y1: 30, z0: -15, z1: 0 }),
+    program: `O3000 (HALMONSTER MED UNDERPROGRAM)
+N1 G90 G17 G21 G94 G40 G80
+T04 M06
+G90 G00 X0 Y0 S2500 M03
+G56 H04 Z20 M08
+VC10=0
+N10 VC10=VC10+1
+G90 G00 X=-30 Y=-20+VC10*10
+CALL O3100 A3
+IF VC10 LT 5 N10
+G00 Z50 M09
+M05
+M30
+O3100 (UNDERPROGRAM: EN RAD HAL, V1 = ANTAL)
+G91 G99 G81 Z-10 R3 F200
+V2=1
+N5 X15
+V2=V2+1
+IF V2 LT V1 N5
+G80
+G90 G00 Z20
+RTS`,
+  },
+];
+
+export function sampleTools(machine, id) {
+  const t = defaultTools(machine);
+  if (id === 'lathe-cycles') {
+    // single finishing tool is enough
+    return t;
+  }
+  return t;
+}
+
+export function sampleById(id) {
+  return SAMPLES.find((s) => s.id === id);
+}
+
+void makeTool;

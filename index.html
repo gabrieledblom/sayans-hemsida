@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OSP-P300 Simulator – simulera Okuma CNC-kod i 3D</title>
+  <meta name="description" content="Gratis webbsimulator för Okuma OSP-P300 svarv- och fräskod. Skriv eller klistra in G-kod, beskriv verktygen och se verktyget bearbeta detaljen i 3D – med radiekompensering, fasta cykler, variabler och underprogram.">
+  <meta name="theme-color" content="#0b0f14">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="OSP-P300 Simulator – Okuma CNC-kod i 3D">
+  <meta property="og:description" content="Simulera Okuma OSP-P300 svarv- och fräsprogram direkt i webbläsaren. Verktygslista, materialborttagning, radiekompensering och fasta cykler.">
+  <meta property="og:locale" content="sv_SE">
+  <meta name="robots" content="index,follow">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='1' width='30' height='30' rx='8' fill='%230f1a24' stroke='%232a3b4d'/%3E%3Ccircle cx='16' cy='16' r='8.2' fill='none' stroke='%233cc4e8' stroke-width='2'/%3E%3Cpath d='M16 4.5v5M16 22.5v5M4.5 16h5' stroke='%233cc4e8' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M22.5 8.8 17.8 14' stroke='%23f2b84b' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preload" href="vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/app.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+  </script>
+  <script type="application/ld+json">
+    { "@context": "https://schema.org", "@type": "SoftwareApplication", "name": "OSP-P300 Simulator",
+      "applicationCategory": "DeveloperApplication", "operatingSystem": "Web",
+      "description": "Webbaserad simulator för Okuma OSP-P300 svarv- och fräskod med 3D-visning av materialborttagning.",
+      "inLanguage": "sv", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "SEK" } }
+  </script>
+</head>
+<body>
+<a class="skip" href="#viewport">Hoppa till 3D-vyn</a>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="8" fill="#0f1a24" stroke="#2a3b4d"/>
+        <circle cx="16" cy="16" r="8.2" fill="none" stroke="#3cc4e8" stroke-width="2"/>
+        <path d="M16 4.5v5M16 22.5v5M4.5 16h5" stroke="#3cc4e8" stroke-width="2" stroke-linecap="round"/>
+        <path d="M22.5 8.8 17.8 14" stroke="#f2b84b" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div class="brand-text">
+        <h1>OSP-P300 <span>Simulator</span></h1>
+        <p>Okuma-kod i 3D · inofficiell</p>
+      </div>
+    </div>
+
+    <div class="seg" role="radiogroup" aria-label="Maskintyp" id="machine-seg">
+      <button role="radio" data-machine="lathe" aria-checked="true">Svarv <small>P300L</small></button>
+      <button role="radio" data-machine="mill" aria-checked="false">Fräs <small>P300M</small></button>
+    </div>
+
+    <div class="top-actions">
+      <div class="menu" id="sample-menu">
+        <button class="btn" id="btn-samples" aria-haspopup="true" aria-expanded="false"></button>
+        <div class="menu-pop" id="sample-pop" role="menu" hidden></div>
+      </div>
+      <button class="btn" id="btn-help"></button>
+    </div>
+
+    <ul class="lamps" aria-label="Maskinstatus">
+      <li id="lamp-auto" class="lamp on"><i></i>AUTO</li>
+      <li id="lamp-sb" class="lamp"><i></i>ETT BLOCK</li>
+      <li id="lamp-opt" class="lamp"><i></i>M01</li>
+      <li id="lamp-bs" class="lamp"><i></i>/</li>
+    </ul>
+  </header>
+
+  <main class="work" id="work">
+    <section class="panel editor-panel" aria-labelledby="h-prog">
+      <div class="panel-head">
+        <h2 id="h-prog">Program</h2>
+        <span class="pname" id="prog-name"></span>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="btn-new" title="Nytt tomt program" aria-label="Nytt tomt program"></button>
+        <button class="icon-btn" id="btn-open" title="Öppna NC-fil" aria-label="Öppna NC-fil"></button>
+        <button class="icon-btn" id="btn-save" title="Spara som fil" aria-label="Spara som fil"></button>
+      </div>
+      <div id="editor" class="editor"></div>
+      <div class="editor-foot" id="ed-foot" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="stage" aria-label="3D-simulering">
+      <div id="viewport" class="viewport" tabindex="-1"></div>
+      <div class="vp-bar" role="toolbar" aria-label="Vyer och visning">
+        <div class="grp" id="views"></div>
+        <div class="grp" id="vp-toggles"></div>
+      </div>
+      <div class="vp-status">
+        <span class="pill" id="status-pill">STOPPAD</span>
+      </div>
+      <div class="vp-hud">
+        <div class="hud-block" id="hud-block"></div>
+        <div class="hud-tool" id="hud-tool"></div>
+      </div>
+      <div class="toasts" id="toasts" aria-live="polite"></div>
+    </section>
+
+    <aside class="side" aria-label="Maskindata">
+      <section class="dro" aria-labelledby="h-dro">
+        <h2 id="h-dro" class="sr-only">Positioner och maskinstatus</h2>
+        <div class="dro-head"><span>ABSOLUT POSITION</span><span id="dro-offset" class="dim"></span></div>
+        <div class="dro-axes" id="dro-axes"></div>
+        <div class="dro-grid">
+          <div class="cell"><label>SPINDEL</label><div id="dro-spindle" class="val">–</div></div>
+          <div class="cell"><label>MATNING</label><div id="dro-feed" class="val">–</div></div>
+          <div class="cell wide"><label>VERKTYG</label><div id="dro-tool" class="val tool">–</div></div>
+          <div class="cell"><label>MASKINTID</label><div id="dro-time" class="val">00:00 / 00:00</div></div>
+          <div class="cell"><label>KYLNING</label><div id="dro-cool" class="val">AV</div></div>
+        </div>
+        <div class="modal" id="dro-modal"></div>
+      </section>
+
+      <nav class="tabs" role="tablist" aria-label="Paneler" id="tabs">
+        <button role="tab" id="tab-tools" aria-controls="pane-tools" aria-selected="true">Verktyg</button>
+        <button role="tab" id="tab-setup" aria-controls="pane-setup" aria-selected="false">Ämne</button>
+        <button role="tab" id="tab-msgs" aria-controls="pane-msgs" aria-selected="false">Meddelanden <b class="badge" id="msg-badge" hidden>0</b></button>
+        <button role="tab" id="tab-codes" aria-controls="pane-codes" aria-selected="false">Koder</button>
+      </nav>
+      <div class="panes">
+        <div role="tabpanel" id="pane-tools" aria-labelledby="tab-tools" class="pane"></div>
+        <div role="tabpanel" id="pane-setup" aria-labelledby="tab-setup" class="pane" hidden></div>
+        <div role="tabpanel" id="pane-msgs" aria-labelledby="tab-msgs" class="pane" hidden></div>
+        <div role="tabpanel" id="pane-codes" aria-labelledby="tab-codes" class="pane" hidden></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="transport" aria-label="Körning">
+    <div class="tgrp">
+      <button class="tbtn" id="t-reset" title="Återställ (R)" aria-label="Återställ"></button>
+      <button class="tbtn" id="t-step" title="Ett block (S)" aria-label="Kör ett block"></button>
+      <button class="tbtn primary" id="t-play" title="Kör / Paus (mellanslag)" aria-label="Kör"></button>
+      <button class="tbtn" id="t-end" title="Kör till slut direkt (E)" aria-label="Kör till slut"></button>
+    </div>
+    <div class="timeline">
+      <span id="t-cur" class="mono">00:00</span>
+      <input id="t-slider" type="range" min="0" max="1000" value="0" aria-label="Position i programmet">
+      <span id="t-dur" class="mono">00:00</span>
+    </div>
+    <label class="sel"><span>Hastighet</span>
+      <select id="t-speed" aria-label="Simuleringshastighet">
+        <option value="1">1×</option><option value="2">2×</option><option value="5">5×</option>
+        <option value="10">10×</option><option value="25">25×</option><option value="60" selected>60×</option>
+        <option value="150">150×</option><option value="400">400×</option><option value="1500">Max</option>
+      </select>
+    </label>
+    <label class="sel"><span>Matn.ovr. <b id="t-feed-v">100%</b></span>
+      <input id="t-feed" type="range" min="0" max="200" step="10" value="100" aria-label="Matningsoverride i procent">
+    </label>
+    <label class="sel"><span>Rapid</span>
+      <select id="t-rapid" aria-label="Rapid-override">
+        <option value="25">25%</option><option value="50">50%</option><option value="100" selected>100%</option>
+      </select>
+    </label>
+  </footer>
+</div>
+
+<dialog id="welcome" aria-labelledby="w-title">
+  <div class="w-card">
+    <p class="eyebrow">Okuma OSP-P300 · svarv &amp; fräs</p>
+    <h2 id="w-title">Se din NC-kod bearbeta detaljen</h2>
+    <p class="w-lead">Skriv eller klistra in Okuma-kod, beskriv verktygen i listan och spela upp programmet i 3D. Materialet tas bort där verktyget går – och du får varning för krock, saknad spindel och fel i koden.</p>
+    <ul class="w-points">
+      <li><span class="wi" data-i="tool"></span><div><b>Verktygslista som simuleringen förstår</b><br>Fräsar, borrar, svarvskär, instick och gängskär med riktig geometri.</div></li>
+      <li><span class="wi" data-i="gear"></span><div><b>Okumas koder &amp; User Task</b><br>G/M-koder, fasta cykler, G41/G42, variabler, IF/GOTO och CALL.</div></li>
+      <li><span class="wi" data-i="alert"></span><div><b>Ärliga varningar</b><br>Koder som bara är delvis simulerade är tydligt markerade under fliken Koder.</div></li>
+    </ul>
+    <div class="w-cta">
+      <button class="btn big primary" data-start="lathe">Starta svarv-exempel</button>
+      <button class="btn big primary" data-start="mill">Starta fräs-exempel</button>
+      <button class="btn big ghost" data-start="blank">Börja med tomt program</button>
+    </div>
+    <p class="fine">Inofficiell simulator. Ej kopplad till eller godkänd av Okuma Corporation. Resultat är en vägledning – verifiera alltid program i maskinens egen kontroll innan körning.</p>
+  </div>
+</dialog>
+
+<noscript><p style="padding:2rem;color:#d9e2ec;font-family:sans-serif">Simulatorn kräver JavaScript och WebGL.</p></noscript>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
