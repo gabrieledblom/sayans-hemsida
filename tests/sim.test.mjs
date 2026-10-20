@@ -109,3 +109,19 @@ test('mill pocket sample reaches programmed depths', async () => {
   assert.ok(Math.abs(hAt(35, 25) + 20) < 0.5, `drilled hole bottom ${hAt(35, 25)}`);
   assert.ok(Math.abs(hAt(40, 0) - -0.5) < 0.02, `skimmed top ${hAt(40, 0)}`);
 });
+
+test('hole-pattern sample drills 5x3 holes', async () => {
+  const { SAMPLES } = await import('../js/data/samples.js');
+  const s = SAMPLES.find((x) => x.id === 'mill-pattern');
+  const r = runProgram(s.program, cfg('mill'));
+  assert.equal(r.msgs.filter((m) => m.type === 'error').length, 0, JSON.stringify(r.msgs));
+  const eng = new SimEngine('mill', s.setup);
+  const warns = eng.fastForward(r.steps);
+  assert.equal(warns.length, 0, JSON.stringify(warns));
+  const st = eng.stock;
+  const hAt = (x, y) => st.h[Math.round((y - st.y0) / st.sy) * st.nx + Math.round((x - st.x0) / st.sx)];
+  let holes = 0;
+  for (const y of [-16, -8, 0, 8, 16]) for (const x of [-30, -15, 0]) if (hAt(x, y) <= -9.7) holes++;
+  assert.equal(holes, 15);
+  assert.ok(hAt(30, 0) > -0.01, 'untouched stock stays');
+});

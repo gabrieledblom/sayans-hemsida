@@ -967,7 +967,7 @@ class Machine {
     if (len < 1e-9) return;
     let f;
     let rapid = !!prim.rapid;
-    const dia = this.lathe ? a[0] + b[0] : 0;
+    const dia = this.lathe ? a[0] + b[0] - (this.toolRec ? 2 * tipToCenter(this.toolRec)[1] : 0) : 0;
     const rpm = this.curRpm(dia);
     this.lastDia = dia || this.lastDia;
     if (rapid) f = this.cfg.rapid || 30000;
@@ -1072,8 +1072,11 @@ class Machine {
   holeCycle(g, w, repeat) {
     const a = w.a;
     const u = this.unitScale;
-    const fresh = !repeat || !this.cycle || this.cycle.g !== g;
-    if (fresh) this.cycle = { g, z: undefined, r: undefined, q: undefined, dwell: 0, initial: this.p.z };
+    const prev = this.cycle;
+    if (!prev || prev.g !== g) {
+      // Changing cycle code keeps the stored Z/R/Q/P data (cleared only by G80 or G00-G03)
+      this.cycle = { g, z: prev?.z, r: prev?.r, q: prev?.q, dwell: prev?.dwell ?? 0 };
+    }
     const c = this.cycle;
     if (a.Z !== undefined) c.z = a.Z * u;
     if (a.R !== undefined) c.r = a.R * u;
@@ -1089,10 +1092,7 @@ class Machine {
     const t = this.targetFrom({ X: a.X, Y: a.Y, U: a.U });
     const zr = inc ? zi + c.r : c.r;
     const zb = inc ? zr + c.z : c.z;
-    if (zb >= zr - EPS) this.alarm(`G${g}: håldjupet Z måste ligga under R-planet`);
-    if ([81, 82, 83, 73, 85, 86, 89, 76, 87].includes(g) || g === 84 || g === 74) {
-      /* ok */
-    }
+    if (g !== 87 && zb >= zr - EPS) this.alarm(`G${g}: håldjupet Z måste ligga under R-planet`);
     this.goto(t.x, this.lathe ? 0 : t.y, zi, true);
     if (Math.abs(zr - zi) > EPS) this.goto(t.x, this.lathe ? 0 : t.y, zr, true);
     const X = t.x, Y = this.lathe ? 0 : t.y;
