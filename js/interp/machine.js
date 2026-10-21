@@ -295,9 +295,12 @@ class Machine {
     const blk = { k: 'e', e: 'blk', ln: b.i, m: null };
     this.pushStep(blk);
 
+    if (b.assigns.length) blk.vars = [];
     for (const asg of b.assigns) {
       const idx = Math.round(this.ev(asg.idx));
-      this.setVar(asg.kind, idx, this.ev(asg.expr));
+      const val = this.ev(asg.expr);
+      this.setVar(asg.kind, idx, val);
+      blk.vars.push({ k: asg.kind, i: idx, v: val });
     }
     blk.m = this.snapshot();
 
@@ -311,6 +314,26 @@ class Machine {
           const t = this.findLabel(frame.prog, s.label);
           if (t < 0) this.alarm(`Sekvensnummer N${s.label} hittades inte`);
           return t;
+        }
+        case 'while': {
+          let endAt = -1;
+          for (let i = pc + 1; i <= frame.prog.end; i++) {
+            const st = this.blocks[i].stmt;
+            if (st && st.type === 'end' && st.n === s.n) {
+              endAt = i;
+              break;
+            }
+          }
+          if (endAt < 0) this.alarm(`WHILE ... DO${s.n} saknar matchande END${s.n}`);
+          return this.ev(s.cond) ? pc + 1 : endAt + 1;
+        }
+        case 'end': {
+          for (let i = pc - 1; i >= frame.prog.start; i--) {
+            const st = this.blocks[i].stmt;
+            if (st && st.type === 'while' && st.n === s.n) return i;
+          }
+          this.alarm(`END${s.n} saknar matchande WHILE ... DO${s.n}`);
+          return pc + 1;
         }
         case 'if': {
           if (this.ev(s.cond)) {
@@ -329,6 +352,8 @@ class Machine {
           for (const [k, v] of Object.entries(w.a)) {
             if (k === 'Q' || k === 'N') continue;
             locals.set(k.charCodeAt(0) - 64, v);
+            blk.vars = blk.vars || [];
+            blk.vars.push({ k: 'V', i: k.charCodeAt(0) - 64, v });
           }
           this.frames.push({
             prog: sub,

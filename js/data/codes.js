@@ -145,6 +145,13 @@ export const CODES = [
   F('DROUND ROUND', 'full', 'Avrunda till närmaste heltal'),
   F('IF', 'full', 'Villkorligt hopp', 'IF VC1 LT 10 N100  eller  IF [VC1 LT 10] N100'),
   F('GOTO', 'full', 'Hopp till sekvensnummer', 'GOTO N100'),
+  F('WHILE … DO / END', 'full', 'Loop så länge villkoret gäller', 'WHILE [VC1 LT 5] DO1 … END1 – nästling med olika nummer'),
+  F('S300*3', 'full', 'Formler direkt i ett värde', 'S300*3, X10+5*2, Z-2*VC1, X[10+2]/3 räknas ut automatiskt (även utan = eller [ ])'),
+  F('^  POW', 'full', 'Potens', 'X2^3 eller POW[2,3]'),
+  F('ASIN ACOS', 'full', 'Arcus sinus/cosinus (grader)'),
+  F('LN LOG EXP', 'full', 'Naturlig logaritm, tiologaritm, e upphöjt'),
+  F('MIN MAX SIGN', 'full', 'Minsta, största och tecken', 'MAX[3,9,4]'),
+  F('PI', 'full', 'Konstanten π', 'VC1=PI*2'),
 ];
 
 export const STATUS_LABEL = {

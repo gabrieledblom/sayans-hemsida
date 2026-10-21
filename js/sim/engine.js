@@ -27,6 +27,7 @@ export class SimEngine {
     this.coolant = false;
     this.airblast = false;
     this.modal = null;
+    this.vars = new Map();
     this.warnKeys.clear();
     this.warnings = [];
   }
@@ -45,6 +46,7 @@ export class SimEngine {
     switch (s.e) {
       case 'blk':
         if (s.m) this.modal = s.m;
+        if (s.vars) for (const v of s.vars) this.vars.set(`${v.k}${v.i}`, v.v);
         break;
       case 'tool':
         this.tool = s.rec;

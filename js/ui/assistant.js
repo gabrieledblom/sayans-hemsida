@@ -21,6 +21,8 @@ const FAQ = [
   [/nollpunkt|g15|work offset|g54/, 'G15 H2 väljer nollpunkt nr 2. Värdena för H1, H2 … anger du i fliken Ämne under Nollpunkter. Obs: G54–G58 på Okuma är längdkompensering, inte nollpunkter.'],
   [/varv|g96|skärhast/, 'S är varv/min (G97) eller skärhastighet i m/min (G96, bara svarv). Max varv sätts med G50 S… eller i fliken Ämne.'],
   [/matning|\bf\b|g94|g95/, 'F är matning. G94 = mm/min, G95 = mm/varv (kräver att spindeln går). Utan F på en matningsrörelse stoppar simuleringen med larm.'],
+  [/formel|räkna|matematik|\*|plus|gånger|sin|cos|sqrt|pi\b/, 'Formler räknas ut direkt: S300*3 blir S900, X10+5*2 blir X20, Z-2*VC1, X[10+2]/3. Operatorer: + - * / ^ MOD, funktioner: SIN COS TAN ASIN ACOS ATAN ATAN2 SQRT ABS LN LOG EXP POW MIN MAX SIGN ROUND FIX FUP och konstanten PI (vinklar i grader). Använd [ ] för att styra ordningen.'],
+  [/loop|while|räknare|upprepa/, 'Loopar: antingen räknare + IF (VC1=VC1+1 / IF VC1 LT 5 N10) eller WHILE [VC1 LT 5] DO1 … END1. Fliken Variabler visar värdena medan du stegar.'],
   [/variabel|vc\d|user task|if |goto/, 'Variabler: VC1… (gemensamma) och V1… (lokala). Använd t.ex. VC1=VC1+1, X=VC1*10 och IF VC1 LT 5 N10 / GOTO N10. Hoppmålet är ett sekvensnummer (N10) i samma program.'],
   [/underprogram|call|rts/, 'CALL O1000 Q3 anropar program O1000 tre gånger. Bokstavsargument (A, B, …) blir V1, V2 … i underprogrammet. Avsluta med RTS.'],
   [/hoppa|steg|bakåt|block/, 'Med pilknapparna i körfältet (eller ←/→ på tangentbordet) stegar du ett block framåt eller bakåt; materialet återskapas exakt. Reglaget hoppar fritt i tid.'],

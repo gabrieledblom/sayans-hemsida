@@ -454,7 +454,7 @@ function renderMessages() {
 }
 
 // ----------------------------------------------------------- tabs
-const PANES = ['tools', 'setup', 'msgs', 'codes', 'ask'];
+const PANES = ['tools', 'setup', 'msgs', 'vars', 'codes', 'ask'];
 function selectTab(name) {
   state.ui.tab = name;
   PANES.forEach((p) => {
@@ -465,6 +465,7 @@ function selectTab(name) {
   if (name === 'tools') toolsPanel.render();
   if (name === 'setup') setupPanel.render();
   if (name === 'codes') codesPanel.render();
+  if (name === 'vars') renderVars(true);
   if (name === 'ask') renderAsk();
   if (name === 'msgs') { $('#pane-msgs').dataset.rendered = ''; renderMessages(); }
   save();
@@ -530,6 +531,26 @@ const setupPanel = new SetupPanel($('#pane-setup'), {
   },
 });
 const codesPanel = new CodesPanel($('#pane-codes'), { machine: () => state.machine });
+
+// ----------------------------------------------------------- variables pane
+let varsSig = '';
+function renderVars(force = false) {
+  if (!player || state.ui.tab !== 'vars') return;
+  const vars = [...player.engine.vars.entries()];
+  const sig = vars.map(([k, v]) => `${k}=${v}`).join('|');
+  if (!force && sig === varsSig) return;
+  varsSig = sig;
+  const nameKey = (k) => [k.startsWith('VC') ? 0 : 1, parseInt(k.replace(/\D/g, ''), 10)];
+  vars.sort((a, b) => { const x = nameKey(a[0]), y = nameKey(b[0]); return x[0] - y[0] || x[1] - y[1]; });
+  const pane = $('#pane-vars');
+  pane.replaceChildren(
+    h('p', { class: 'lead' }, 'Värden på variablerna vid den punkt i programmet där simuleringen står just nu. Stega med pilknapparna för att se hur räknare och loopar förändras. VC = gemensamma, V = lokala.'),
+    vars.length
+      ? h('table', { class: 'tbl' }, h('thead', {}, h('tr', {}, h('th', {}, 'Variabel'), h('th', {}, 'Värde'))),
+          h('tbody', {}, vars.map(([k, v]) => h('tr', {}, h('td', { class: 'code' }, k), h('td', { class: 'mono' }, String(+v.toFixed(6)))))))
+      : h('div', { class: 'empty' }, 'Inga variabler har tilldelats ännu (t.ex. VC1=0).'),
+  );
+}
 
 // ----------------------------------------------------------- assistant
 const chat = [];
@@ -718,6 +739,7 @@ function updateDro(force = false) {
     modalBox.replaceChildren(...(modal ? [...modal.g.map((g) => h('span', {}, g)), ...modal.m.map((m) => h('span', { class: 'm' }, m))] : []));
   }
   toolsPanel.setActive(eng.toolNo);
+  renderVars();
   if (!dragging && player.duration > 0) {
     const v = Math.round((player.simTime / player.duration) * 1000);
     slider.value = String(v);

@@ -4,7 +4,7 @@
 
 export class ParseError extends Error {}
 
-const STMT_WORDS = new Set(['CALL', 'RTS', 'IF', 'GOTO']);
+const STMT_WORDS = new Set(['CALL', 'RTS', 'IF', 'GOTO', 'WHILE', 'END']);
 const EQ_ADDRS = new Set(['MT', 'TG', 'TL', 'SB']);
 const SYS_VARS = new Set(['PX', 'PY', 'PZ', 'VACOD', 'VATOL', 'VINS', 'VTLCN', 'VZSHX', 'VZSHY', 'VZSHZ', 'VTOFD']);
 const BIN_WORDS = new Set(['AND', 'OR', 'XOR', 'MOD', 'EQ', 'NE', 'GT', 'LT', 'GE', 'LE']);
@@ -21,6 +21,27 @@ export const FUNCS = {
     if (a[0] < 0) throw new Error('SQRT av negativt tal');
     return Math.sqrt(a[0]);
   },
+  ASIN: (a) => {
+    if (Math.abs(a[0]) > 1) throw new Error('ASIN utanför −1…1');
+    return Math.asin(a[0]) / D2R;
+  },
+  ACOS: (a) => {
+    if (Math.abs(a[0]) > 1) throw new Error('ACOS utanför −1…1');
+    return Math.acos(a[0]) / D2R;
+  },
+  LN: (a) => {
+    if (a[0] <= 0) throw new Error('LN av tal ≤ 0');
+    return Math.log(a[0]);
+  },
+  LOG: (a) => {
+    if (a[0] <= 0) throw new Error('LOG av tal ≤ 0');
+    return Math.log10(a[0]);
+  },
+  EXP: (a) => Math.exp(a[0]),
+  POW: (a) => Math.pow(a[0], a[1]),
+  MIN: (a) => Math.min(...a),
+  MAX: (a) => Math.max(...a),
+  SIGN: (a) => Math.sign(a[0]),
   FIX: (a) => Math.trunc(a[0]),
   DFIX: (a) => Math.trunc(a[0]),
   FUP: (a) => Math.sign(a[0]) * Math.ceil(Math.abs(a[0])),
@@ -109,17 +130,25 @@ class Scanner {
     }
   }
   mulExpr() {
-    let l = this.unary();
+    let l = this.powExpr();
     for (;;) {
       const c = this.peek();
       if (c === '*' || c === '/') {
         this.p++;
-        l = { t: 'bin', op: c, l, r: this.unary() };
+        l = { t: 'bin', op: c, l, r: this.powExpr() };
       } else if (this.binWord() === 'MOD') {
         this.p += 3;
-        l = { t: 'bin', op: 'MOD', l, r: this.unary() };
+        l = { t: 'bin', op: 'MOD', l, r: this.powExpr() };
       } else return l;
     }
+  }
+  powExpr() {
+    const l = this.unary();
+    if (this.peek() === '^') {
+      this.p++;
+      return { t: 'bin', op: '^', l, r: this.powExpr() };
+    }
+    return l;
   }
   unary() {
     const c = this.peek();
@@ -169,6 +198,10 @@ class Scanner {
     }
     const r = this.run();
     if (!r) throw new ParseError(`Oväntat tecken '${c}' i uttryck`);
+    if (r === 'PI') {
+      this.p += 2;
+      return { t: 'num', v: Math.PI };
+    }
     if (r === 'VC' || r === 'V') {
       this.p += r.length;
       return { t: 'var', kind: r, idx: this.varIndex() };
@@ -208,6 +241,17 @@ class Scanner {
     throw new ParseError(`Okänd symbol '${r}'`);
   }
 
+  operatorFollows() {
+    let q = this.p;
+    while (q < this.s.length && /\s/.test(this.s[q])) q++;
+    const c = this.s[q];
+    if (c === undefined) return false;
+    if ('+-*^'.includes(c)) return true;
+    if (c === '/') return q + 1 < this.s.length;
+    const m = /^[A-Z]+/.exec(this.s.slice(q));
+    return !!m && BIN_WORDS.has(m[0]);
+  }
+
   // ---- words -------------------------------------------------------------
   wordValue() {
     this.ws();
@@ -217,14 +261,25 @@ class Scanner {
       return this.expr();
     }
     if (c === '[') {
+      const start = this.p;
       this.p++;
       const e = this.expr();
       this.expectChar(']');
+      if (this.operatorFollows()) {
+        this.p = start;
+        return this.expr();
+      }
       return e;
     }
     const m = /^[+-]?(\d+\.?\d*|\.\d+)/.exec(this.s.slice(this.p));
     if (!m) throw new ParseError('Värde saknas');
+    const start = this.p;
     this.p += m[0].length;
+    if (this.operatorFollows()) {
+      // S300*3, X10+5, Z-2*VC1 ... a formula without = or [ ]
+      this.p = start;
+      return this.expr();
+    }
     return parseFloat(m[0]);
   }
 }
@@ -258,6 +313,11 @@ export function evalExpr(n, ctx) {
         case '+': return a + b;
         case '-': return a - b;
         case '*': return a * b;
+        case '^': {
+          const v = Math.pow(a, b);
+          if (!isFinite(v)) throw new Error('Ogiltig potens');
+          return v;
+        }
         case '/':
           if (b === 0) throw new Error('Division med noll');
           return a / b;
@@ -365,6 +425,18 @@ export function parseLine(raw, i) {
           if (!lm) throw new ParseError('GOTO saknar sekvensnummer');
           sc.p += lm[0].length;
           block.stmt = { type: 'goto', label: parseInt(lm[1], 10) };
+        } else if (run === 'WHILE') {
+          const rest = sc.s.slice(sc.p);
+          const dm = /DO\s*(\d+)\s*$/.exec(rest);
+          if (!dm) throw new ParseError('WHILE saknar DO<nummer> (t.ex. WHILE [VC1 LT 5] DO1)');
+          block.stmt = { type: 'while', cond: parseExpression(rest.slice(0, dm.index)), n: parseInt(dm[1], 10) };
+          sc.p = sc.s.length;
+        } else if (run === 'END') {
+          sc.ws();
+          const em = /^(\d+)/.exec(sc.s.slice(sc.p));
+          if (!em) throw new ParseError('END saknar nummer (t.ex. END1)');
+          sc.p += em[0].length;
+          block.stmt = { type: 'end', n: parseInt(em[1], 10) };
         } else {
           const rest = sc.s.slice(sc.p);
           const lm = /(?:GOTO\s*)?N\s*(\d+)\s*$/.exec(rest);

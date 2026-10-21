@@ -187,6 +187,36 @@ N89 G30
 N90 M30`,
   },
   {
+    id: 'mill-formulas',
+    machine: 'mill',
+    name: 'Fräs – variabler, formler och WHILE-loop (S300*3, SIN/COS)',
+    setup: millSetup(),
+    program: `O3200 (VARIABLER, FORMLER OCH LOOPAR)
+(Formler får skrivas direkt: S300*3 blir S900)
+N1 G90 G17 G21 G94 G40 G80
+T04 M06
+S300*3 M03
+G56 H04 Z20 M08
+(HALCIRKEL: VC3 HAL PA RADIE VC2 - RAKNARE VC1)
+VC1=0
+VC2=25
+VC3=8
+WHILE [VC1 LT VC3] DO1
+G90 G00 X=VC2*COS[VC1*360/VC3] Y=VC2*SIN[VC1*360/VC3]
+G99 G81 Z-10 R3 F200
+VC1=VC1+1
+END1
+G80
+(CENTRUMHAL MED FORMEL FOR DJUP)
+VC4=3*4
+G00 X0 Y0
+G81 Z=-VC4 R3 F200
+G80
+G00 Z50 M09
+M05
+M30`,
+  },
+  {
     id: 'mill-pattern',
     machine: 'mill',
     name: 'Fräs – hålmönster med CALL, IF/GOTO och G91',

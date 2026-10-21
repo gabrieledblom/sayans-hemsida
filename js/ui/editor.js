@@ -10,7 +10,7 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, 
 export function highlightLine(raw) {
   let out = '';
   let rest = raw;
-  const re = /(\([^)]*\)|;.*$)|(\b(?:CALL|RTS|IF|GOTO|MT|TG|TL|SB)\b)|(\bVC?\d+|\bVC?\[[^\]]*\])|(\bN\d+)|(\bO[A-Z0-9_]+\b)|(\bG\d+(?:\.\d+)?)|(\bM\d+)|(\bT\d+)|([FS]=?-?[\d.]+)|([XYZUWABCIJKRHDPQEL]=?-?[\d.]*)|(\b[A-Z]{2,}\b)/gi;
+  const re = /(\([^)]*\)|;.*$)|(\b(?:CALL|RTS|IF|GOTO|WHILE|END\d*|DO\d+|MT|TG|TL|SB)\b)|(\bVC?\d+|\bVC?\[[^\]]*\])|(\bN\d+)|(\bO[A-Z0-9_]+\b)|(\bG\d+(?:\.\d+)?)|(\bM\d+)|(\bT\d+)|([FS]=?-?[\d.]+)|([XYZUWABCIJKRHDPQEL]=?-?[\d.]*)|(\b[A-Z]{2,}\b)/gi;
   let last = 0;
   let m;
   while ((m = re.exec(rest))) {
