@@ -400,7 +400,10 @@ export function parseLine(raw, i) {
       if (c === ',') {
         sc.p++;
         const letter = sc.s[sc.p++];
-        if (letter !== 'C' && letter !== 'R') throw new ParseError("Efter ',' förväntas C eller R");
+        if (letter !== 'C' && letter !== 'R') {
+          if (/\d/.test(letter || '')) throw new ParseError("Decimalkomma stöds inte – använd punkt (t.ex. X10.5)");
+          throw new ParseError("Efter ',' förväntas C eller R (fas/rundning)");
+        }
         block.words.push({ a: ',' + letter, v: sc.wordValue() });
         continue;
       }

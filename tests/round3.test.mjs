@@ -78,3 +78,14 @@ test('code list semantics: lathe G20/G21 return to reference, mill G20 inch, G30
   assert.equal(g11.steps.filter((s) => s.k === 'm').length, 0);
   assert.equal(runProgram('G11 X10\nG0 X0\nM30', cfg()).steps.find((s) => s.k === 'm').b[0], 10);
 });
+
+test('sanity warnings: no tool, preselected tool, absurd feed, bad D, decimal comma', () => {
+  const w = (p, m = 'mill') => runProgram(p, cfg(m)).msgs;
+  assert.ok(w('S1000 M3\nG0 Z5\nG1 Z-3 F200\nM30').some((x) => /Ingen verktyg/.test(x.text)));
+  assert.ok(w('T2\nS1000 M3\nG0 Z5\nG1 Z-3 F200\nM30').some((x) => /M06 saknas/.test(x.text)));
+  assert.ok(w('T01\nG97 S800 M3\nG0 X50 Z2\nG1 Z-10 F100\nM30', 'lathe').some((x) => /orimligt/.test(x.text)));
+  assert.ok(w('T02 M06\nS1000 M3\nG94\nG1 X5 F0.2\nM30').some((x) => /långsamt/.test(x.text)));
+  assert.ok(w('T02 M06\nS1000 M3\nG41 D99 G1 X10 F100\nG1 Y10\nG40\nM30').some((x) => /D99/.test(x.text)));
+  assert.ok(w('G0 X10,5\nM30').some((x) => /punkt/.test(x.text)));
+  assert.equal(w('T02 M06\nS1000 M3\nG0 Z5\nG1 Z-3 F200\nM30').filter((x) => x.type === 'warn').length, 0);
+});

@@ -487,7 +487,7 @@ const toolsPanel = new ToolsPanel($('#pane-tools'), {
     state.tools[state.machine] = defaultTools(state.machine);
     save();
     recompute();
-    toolsPanel.render();
+    setTimeout(() => toolsPanel.render(), 0);
   },
 });
 const setupPanel = new SetupPanel($('#pane-setup'), {
@@ -495,11 +495,12 @@ const setupPanel = new SetupPanel($('#pane-setup'), {
   changed: (what) => {
     save();
     if (what === 'stock') {
+      sanitizeStock();
       state.home[state.machine] = defaultHome(state.machine, state.setup[state.machine]);
       rebuildWorld();
       buildToolbar();
       recompute();
-      setupPanel.render();
+      setTimeout(() => setupPanel.render(), 0);
     } else if (what === 'opts') {
       if (player) player.optionalStop = state.opts.optionalStop;
       syncTransport();
@@ -568,6 +569,29 @@ function renderAsk(ask) {
   pane.replaceChildren(log, chips, form);
   log.scrollTop = log.scrollHeight;
   if (ask) $('#ask-in').focus();
+}
+
+function sanitizeStock() {
+  const m = state.machine;
+  const s = state.setup[m];
+  let fixed = false;
+  const fix = (cond, fn) => { if (cond) { fn(); fixed = true; } };
+  if (m === 'lathe') {
+    fix(!(s.od >= 2), () => (s.od = 2));
+    fix(!(s.length >= 5), () => (s.length = 5));
+    fix(!(s.id >= 0), () => (s.id = 0));
+    fix(s.id >= s.od, () => (s.id = Math.max(0, s.od - 2)));
+    fix(!(s.stickOut >= 5), () => (s.stickOut = Math.min(5, s.length)));
+    fix(s.stickOut > s.length, () => (s.stickOut = s.length));
+  } else {
+    for (const [lo, hi] of [['x0', 'x1'], ['y0', 'y1'], ['z0', 'z1']]) {
+      fix(s[lo] > s[hi], () => ([s[lo], s[hi]] = [s[hi], s[lo]]));
+      fix(s[hi] - s[lo] < 1, () => (s[hi] = s[lo] + 1));
+    }
+    fix(!(s.stick >= 1), () => (s.stick = 1));
+    fix(s.stick > s.z1 - s.z0, () => (s.stick = s.z1 - s.z0));
+  }
+  if (fixed) toast('warn', 'Ämnesmåtten justerades till giltiga värden (max större än min, minst 1 mm).');
 }
 
 // ----------------------------------------------------------- machine switch / samples

@@ -576,6 +576,7 @@ class Machine {
           break;
         }
         const dn = Math.round(a.D ?? 0);
+        if (dn && !this.cfg.tools[dn]) this.warn(`D${dn}: verktyg ${dn} finns inte i verktygslistan – använder aktivt verktyg`);
         const rec = dn && this.cfg.tools[dn] ? this.cfg.tools[dn] : this.toolRec;
         if (!rec) this.alarm('G41/G42 utan valt verktyg');
         const r = compRadius(rec, this.cfg.machine);
@@ -1006,6 +1007,7 @@ class Machine {
       f = this.F * rpm;
     } else f = this.F;
     if (!rapid && !(f > 0)) this.alarm('Ingen matning programmerad (F saknas eller F0)', prim.ln);
+    if (!rapid && !prim.pitch) this.sanityCheckFeed(prim.ln);
     const step = {
       k: 'm',
       rapid,
@@ -1023,6 +1025,21 @@ class Machine {
     else this.stats.feedLen += len;
     this.updateBBox(b);
     this.commit(step);
+  }
+
+  // Warnings for programs that run but are probably not what the author meant
+  sanityCheckFeed(ln) {
+    if (!this.toolRec) {
+      const pre = this.preTool;
+      this.warn(
+        !this.lathe && pre
+          ? `T${pre} är förvalt men inte laddat – M06 saknas före bearbetningen`
+          : 'Ingen verktyg är laddat – skriv T… (svarv) eller T… M06 (fräs) före bearbetning',
+        ln,
+      );
+    }
+    if (this.feedMode === 95 && this.F > 5) this.warn(`F${+(this.F / this.unitScale).toFixed(3)} är ${+(this.F).toFixed(1)} mm per varv (G95) – orimligt stor matning. Menade du G94 (mm/min)?`, ln);
+    if (this.feedMode === 94 && this.F > 0 && this.F < 1) this.warn(`F${+this.F.toFixed(3)} är bara ${+this.F.toFixed(3)} mm/min (G94) – extremt långsamt. Menade du G95 (mm/varv)?`, ln);
   }
 
   updateBBox(p) {

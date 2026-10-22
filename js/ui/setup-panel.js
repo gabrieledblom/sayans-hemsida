@@ -38,6 +38,10 @@ export class SetupPanel {
     this.ctx = ctx;
   }
 
+  later() {
+    setTimeout(() => this.render(), 0);
+  }
+
   render() {
     const { state } = this.ctx;
     const m = state.machine;
@@ -113,7 +117,7 @@ export class SetupPanel {
       return h('tr', {}, h('td', { class: 'code' }, 'H' + n), cell('x'), cell('y'), cell('z'),
         h('td', {}, n === 1 ? null : h('button', {
           class: 'icon-btn danger', title: 'Ta bort', 'aria-label': `Ta bort H${n}`, html: icon('trash', 16),
-          onclick: () => { delete offs[n]; this.ctx.changed('program'); this.render(); },
+          onclick: () => { delete offs[n]; this.ctx.changed('program'); this.later(); },
         })));
     });
     sections.push(
@@ -125,7 +129,7 @@ export class SetupPanel {
           let n = 1; while (offs[n]) n++;
           offs[n] = { x: 0, y: 0, z: 0 };
           this.ctx.changed('program');
-          this.render();
+          this.later();
         } }),
       ),
       h('section', { class: 'card' },

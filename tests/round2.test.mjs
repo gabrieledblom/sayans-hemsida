@@ -12,7 +12,7 @@ const errs = (r) => r.msgs.filter((m) => m.type === 'error');
 test('N-words with text (NT1) are inert labels', () => {
   const r = runProgram('NT1 G0 X5\nN10 NABC\nN20 X10 NSTART G1 X20 F100\nM30', cfg('mill'));
   assert.equal(errs(r).length, 0, JSON.stringify(r.msgs));
-  assert.equal(r.msgs.filter((m) => m.type === 'warn').length, 0);
+  assert.equal(r.msgs.filter((m) => m.type === 'warn' && !/Ingen verktyg/.test(m.text)).length, 0);
   assert.equal(r.steps.filter((s) => s.k === 'm').length, 2);
 });
 

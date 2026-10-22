@@ -36,6 +36,10 @@ export class ToolsPanel {
     this.root.querySelectorAll('[data-t]').forEach((el) => el.classList.toggle('is-active', +el.dataset.t === n));
   }
 
+  later() {
+    setTimeout(() => this.render(), 0);
+  }
+
   render() {
     const machine = this.ctx.machine();
     const tools = this.ctx.tools();
@@ -62,7 +66,7 @@ export class ToolsPanel {
             tool.n = nn;
             tools[nn] = tool;
             this.ctx.onChange();
-            this.render();
+            this.later();
           },
         });
         const typeSel = h(
@@ -74,7 +78,7 @@ export class ToolsPanel {
               const base = makeTool(machine, tool.n, e.target.value);
               tools[tool.n] = { ...base, name: tool.name === types[tool.type] || /Ø/.test(tool.name) ? base.name : tool.name };
               this.ctx.onChange();
-              this.render();
+              this.later();
             },
           },
           Object.entries(types).map(([k, v]) => h('option', { value: k, selected: k === tool.type }, v)),
@@ -144,7 +148,7 @@ export class ToolsPanel {
                 const nn = this.nextFree(tools);
                 tools[nn] = { ...tool, n: nn };
                 this.ctx.onChange();
-                this.render();
+                this.later();
               },
             }),
             h('button', {
@@ -155,7 +159,7 @@ export class ToolsPanel {
               onclick: () => {
                 delete tools[tool.n];
                 this.ctx.onChange();
-                this.render();
+                this.later();
               },
             }),
           ),
@@ -180,7 +184,7 @@ export class ToolsPanel {
           const nn = this.nextFree(tools);
           tools[nn] = makeTool(machine, nn, typeSelect.value);
           this.ctx.onChange();
-          this.render();
+          this.later();
         },
       }),
       h('button', { class: 'btn ghost', onclick: () => this.ctx.onReset(), html: '<span>Standardlista</span>' }),
