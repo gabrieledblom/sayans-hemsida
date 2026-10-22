@@ -629,7 +629,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(
 // ----------------------------------------------------------- files
 $('#btn-new').addEventListener('click', () => {
   if (editor.getValue().trim() && !confirm('Ersätta programmet med ett tomt?')) return;
-  const blank = `O0001 (NYTT PROGRAM)\nN1 G90 G${state.machine === 'lathe' ? '18' : '17'} G21\n\nM30\n`;
+  const blank = `O0001 (NYTT PROGRAM)\nN1 G90 G${state.machine === 'lathe' ? '18' : '17'}${state.machine === 'lathe' ? '' : ' G21'}\n\nM30\n`;
   state.programs[state.machine] = blank;
   editor.setValue(blank);
   recompute();
@@ -658,7 +658,7 @@ $$('#welcome [data-start]').forEach((b) =>
     if (k === 'lathe') loadSample('lathe-shaft');
     else if (k === 'mill') loadSample('mill-pocket');
     else {
-      state.programs[state.machine] = `O0001 (NYTT PROGRAM)\nN1 G90 G${state.machine === 'lathe' ? '18' : '17'} G21\n\nM30\n`;
+      state.programs[state.machine] = `O0001 (NYTT PROGRAM)\nN1 G90 G${state.machine === 'lathe' ? '18' : '17'}${state.machine === 'lathe' ? '' : ' G21'}\n\nM30\n`;
       applyMachine();
     }
     dlg.close();

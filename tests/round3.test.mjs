@@ -67,3 +67,14 @@ test('formula sample runs: 8 holes on a circle + formula depth', async () => {
   for (let i = 0; i < 8; i++) assert.ok(hAt(25 * Math.cos((i * Math.PI) / 4), 25 * Math.sin((i * Math.PI) / 4)) < -9.5, `hole ${i}`);
   assert.ok(hAt(0, 0) < -11.5, 'center hole depth 12 from formula');
 });
+
+test('code list semantics: lathe G20/G21 return to reference, mill G20 inch, G30 mill only, G11 does not move', () => {
+  const l = runProgram('G0 X30 Z5\nG21\nM30', cfg('lathe'));
+  const last = l.steps.filter((s) => s.k === 'm').at(-1).b;
+  assert.deepEqual([last[0], last[2]], [60, 100]);
+  assert.equal(runProgram('G20\nG0 X1\nM30', cfg()).steps.find((s) => s.k === 'm').b[0], 25.4);
+  assert.equal(runProgram('G30\nM30', cfg('lathe')).msgs.filter((m) => m.type === 'warn').length, 1);
+  const g11 = runProgram('G11 X10\nM30', cfg());
+  assert.equal(g11.steps.filter((s) => s.k === 'm').length, 0);
+  assert.equal(runProgram('G11 X10\nG0 X0\nM30', cfg()).steps.find((s) => s.k === 'm').b[0], 10);
+});

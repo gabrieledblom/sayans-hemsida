@@ -540,6 +540,7 @@ class Machine {
           a.Z !== undefined ? a.Z * this.unitScale : 0,
         ];
         void o;
+        delete a.X; delete a.Y; delete a.Z;
         break;
       }
       case 15: {
@@ -554,13 +555,14 @@ class Machine {
         this.plane = g;
         break;
       case 20:
-        this.unitScale = 25.4;
-        break;
       case 21:
-        this.unitScale = 1;
+        // Okuma list: lathe G20/G21 = return to reference point; mill G20 = inch, G21 = mm
+        if (L) actions.push(30);
+        else this.unitScale = g === 20 ? 25.4 : 1;
         break;
       case 30:
-        actions.push(30);
+        if (L) this.warn('G30 är en fräskod. På svarv används G20/G21 för återgång till referenspunkt');
+        else actions.push(30);
         break;
       case 40:
         this.compG = 40;
